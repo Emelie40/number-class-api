@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import requests
 
 app = FastAPI()
@@ -44,26 +45,37 @@ def get_fun_fact(n: int) -> str:
 
 # API Endpoint
 @app.get("/api/classify-number")
-async def classify_number(number: int = Query(..., description="The number to classify")):
-    properties = ["odd" if number % 2 else "even"]
-    if is_armstrong(number):
+async def classify_number(number = Query(..., description="The number to classify")):
+    if isinstance(number, str):
+        try:
+            number = int(number)
+        except ValueError:
+            response_data = {
+                "number": number,
+                "error": True
+            }
+            return JSONResponse(status_code=400, content=response_data)
+    
+    num = abs(number)
+    properties = ["odd" if num % 2 else "even"]
+    if is_armstrong(num):
         properties.insert(0, "armstrong")
 
     response_data = {
         "number": number,
-        "is_prime": is_prime(number),
-        "is_perfect": is_perfect(number),
+        "is_prime": is_prime(num),
+        "is_perfect": is_perfect(num),
         "properties": properties,
-        "digit_sum": sum(int(d) for d in str(abs(number))),
-        "fun_fact": get_fun_fact(number),
+        "digit_sum": sum(int(d) for d in str(num)),
+        "fun_fact": get_fun_fact(num),
     }
 
     return response_data
 
-# Custom error handler for invalid input
-@app.exception_handler(HTTPException)
-async def custom_http_exception_handler(request, exc):
-    return {
-        "number": request.query_params.get("number", "unknown"),
-        "error": True
-    }
+# # Custom error handler for invalid input
+# @app.exception_handler(HTTPException)
+# async def custom_http_exception_handler(request, exc):
+#     return {
+#         "number": request.query_params.get("number", "unknown"),
+#         "error": True
+#     }
