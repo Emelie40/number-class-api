@@ -25,7 +25,10 @@ def is_prime(n: int) -> bool:
 
 # Function to check if a number is perfect
 def is_perfect(n: int) -> bool:
+    if n < 2:
+        return False
     return n == sum(i for i in range(1, n) if n % i == 0)
+
 
 # Function to check if a number is an Armstrong number
 def is_armstrong(n: int) -> bool:
