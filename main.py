@@ -1,8 +1,17 @@
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 
 app = FastAPI()
+
+# Enable CORS (Cross-Origin Resource Sharing)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this for security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Function to check if a number is prime
 def is_prime(n: int) -> bool:
@@ -19,14 +28,14 @@ def is_perfect(n: int) -> bool:
 
 # Function to check if a number is an Armstrong number
 def is_armstrong(n: int) -> bool:
-    digits = [int(d) for d in str(abs(n))]  # Handle negative numbers
+    digits = [int(d) for d in str(n)]
     power = len(digits)
-    return abs(n) == sum(d ** power for d in digits)
+    return n == sum(d ** power for d in digits)
 
 # Function to get a fun fact from Numbers API
-def get_fun_fact(n: float) -> str:
+def get_fun_fact(n: int) -> str:
     try:
-        response = requests.get(f"http://numbersapi.com/{int(n)}/math?json")
+        response = requests.get(f"http://numbersapi.com/{n}/math?json")
         if response.status_code == 200:
             return response.json().get("text", "No fact available.")
     except requests.RequestException:
@@ -35,29 +44,26 @@ def get_fun_fact(n: float) -> str:
 
 # API Endpoint
 @app.get("/api/classify-number")
-async def classify_number(number: float = Query(..., description="The number to classify")):
-    # If the number is a whole number, convert to int
-    num = int(number) if number.is_integer() else number
-
-    properties = ["odd" if int(num) % 2 else "even"]
-    if is_armstrong(int(num)):  # Only check Armstrong for whole numbers
+async def classify_number(number: int = Query(..., description="The number to classify")):
+    properties = ["odd" if number % 2 else "even"]
+    if is_armstrong(number):
         properties.insert(0, "armstrong")
 
     response_data = {
-        "number": num,
-        "is_prime": is_prime(int(num)),
-        "is_perfect": is_perfect(int(num)),
+        "number": number,
+        "is_prime": is_prime(number),
+        "is_perfect": is_perfect(number),
         "properties": properties,
-        "digit_sum": sum(int(d) for d in str(abs(int(num)))),
-        "fun_fact": get_fun_fact(num),
+        "digit_sum": sum(int(d) for d in str(abs(number))),
+        "fun_fact": get_fun_fact(number),
     }
 
-    return JSONResponse(content=response_data, status_code=200)
+    return response_data
 
 # Custom error handler for invalid input
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"number": request.query_params.get("number", "unknown"), "error": True}
-    )
+    return {
+        "number": request.query_params.get("number", "unknown"),
+        "error": True
+    }
