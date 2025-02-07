@@ -27,17 +27,18 @@ def get_fun_fact(n):
 
 @app.get("/api/classify-number")
 async def classify_number(number: int = Query(..., description="The number to classify")):
-    properties = ["odd" if number % 2 else "even"]
-    if is_armstrong(number):
+    num = abs(number)
+    properties = ["odd" if num % 2 else "even"]
+    if is_armstrong(num):
         properties.insert(0, "armstrong")
 
     return {
         "number": number,
-        "is_prime": is_prime(number),
-        "is_perfect": is_perfect(number),
+        "is_prime": is_prime(num),
+        "is_perfect": is_perfect(num),
         "properties": properties,
-        "digit_sum": sum(int(d) for d in str(number)),
-        "fun_fact": get_fun_fact(number)
+        "digit_sum": sum(int(d) for d in str(num)),
+        "fun_fact": get_fun_fact(num)
     }
 from fastapi import HTTPException
 
@@ -46,8 +47,12 @@ async def classify_number(number: str):
     try:
         num = int(number)
     except ValueError:
-        raise HTTPException(status_code=400, detail={"number": number, "error": True})
-
+        response = {
+                "number": number,
+                "error": True
+            }
+            # raise HTTPException(status_code=400, detail = response)
+            return JSONResponse(status_code=400, content=response)
     properties = ["odd" if num % 2 else "even"]
     if is_armstrong(num):
         properties.insert(0, "armstrong")
